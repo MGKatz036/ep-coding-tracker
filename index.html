@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="EP Coder">
+  <title>EP Coding Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>EP Coding Tracker</h1>
+    <div id="syncBadge" class="sync-badge hidden"></div>
+  </header>
+
+  <div id="verifyBanner" class="verify-banner hidden">
+    ⚠️ wRVU values are unverified estimates. Ask Claude to verify against the current CMS fee schedule before relying on totals.
+  </div>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-view="logView">Log</button>
+    <button class="tab-btn" data-view="historyView">History</button>
+    <button class="tab-btn" data-view="settingsView">Settings</button>
+  </nav>
+
+  <main>
+    <!-- ============ LOG VIEW ============ -->
+    <section id="logView" class="view">
+      <div class="field-row">
+        <label for="sessionDate">Procedure date</label>
+        <input type="date" id="sessionDate">
+      </div>
+      <div id="categoryList"></div>
+
+      <div id="cart" class="cart hidden">
+        <h2>Current Session</h2>
+        <div id="cartItems"></div>
+        <div class="cart-totals">
+          <div><span id="cartWrvu">0</span> wRVU</div>
+          <div id="cartRevenue"></div>
+        </div>
+        <div class="cart-actions">
+          <button id="clearBtn" class="btn secondary">Clear</button>
+          <button id="saveBtn" class="btn primary">Save Session</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HISTORY VIEW ============ -->
+    <section id="historyView" class="view hidden">
+      <div class="filter-row">
+        <button class="filter-btn active" data-range="today">Today</button>
+        <button class="filter-btn" data-range="week">Week</button>
+        <button class="filter-btn" data-range="month">Month</button>
+        <button class="filter-btn" data-range="all">All</button>
+        <button class="filter-btn" data-range="custom">Custom</button>
+      </div>
+      <div id="customRange" class="field-row hidden">
+        <input type="date" id="rangeStart"> <span>to</span> <input type="date" id="rangeEnd">
+      </div>
+      <div id="historyTotals" class="totals-card"></div>
+      <div id="historyList"></div>
+    </section>
+
+    <!-- ============ SETTINGS VIEW ============ -->
+    <section id="settingsView" class="view hidden">
+      <div class="settings-card">
+        <h2>Compensation</h2>
+        <div class="field-row">
+          <label for="rateInput">$ per wRVU</label>
+          <input type="number" id="rateInput" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 45.00">
+        </div>
+        <button id="saveRateBtn" class="btn primary">Save Rate</button>
+        <p class="hint">Applied to new entries only — saved sessions keep the rate in effect when they were logged.</p>
+      </div>
+      <div class="settings-card">
+        <h2>Reference Data</h2>
+        <p>wRVU values last updated: <strong id="refUpdated"></strong></p>
+        <p id="refStatus"></p>
+        <p class="hint">To refresh: ask Claude to check the current CMS Medicare Physician Fee Schedule and update <code>data/referenceData.js</code>.</p>
+      </div>
+      <div class="settings-card">
+        <h2>Export</h2>
+        <button id="exportCsvBtn" class="btn primary">Download CSV of all sessions</button>
+        <p class="hint">Opens in Numbers/Excel. One row per CPT code, grouped by date.</p>
+      </div>
+      <div class="settings-card">
+        <h2>Google Sheets Sync</h2>
+        <label class="stack-label" for="gsClientId">Google Client ID</label>
+        <input type="text" id="gsClientId" placeholder="xxxxx.apps.googleusercontent.com" autocomplete="off">
+        <label class="stack-label" for="gsSheetId">Spreadsheet ID</label>
+        <input type="text" id="gsSheetId" placeholder="long ID from the sheet's web address" autocomplete="off">
+        <button id="connectBtn" class="btn primary">Save & Connect</button>
+        <p id="syncStatusMsg" class="hint">Not configured — sessions are stored on this device only.</p>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="data/referenceData.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/googleAuth.js"></script>
+  <script src="js/sheetsClient.js"></script>
+  <script src="js/syncEngine.js"></script>
+  <script src="js/sessionForm.js"></script>
+  <script src="js/historyView.js"></script>
+  <script src="js/settingsView.js"></script>
+  <script src="js/exportShare.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
