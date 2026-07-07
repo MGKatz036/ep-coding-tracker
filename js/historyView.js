@@ -105,6 +105,8 @@ window.EPT = window.EPT || {};
       el("pullBtn").addEventListener("click", async () => {
         el("pullBtn").textContent = "⟳ Syncing…";
         try {
+          // token FIRST, while the tap still counts as a user gesture (popup allowed)
+          await window.EPT.auth.getToken();
           await window.EPT.sync.syncPending();
           const added = await window.EPT.sync.pullAndMerge();
           el("pullBtn").textContent = added ? `✓ ${added} pulled` : "✓ Up to date";

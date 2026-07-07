@@ -8,6 +8,7 @@ window.EPT = window.EPT || {};
   let tokenClient = null;
   let accessToken = null;
   let tokenExpiry = 0;
+  let pendingReject = null; // lets a blocked/closed popup fail fast instead of hanging
 
   const clientId = () => localStorage.getItem("gs_client_id") || (window.EPT.CONFIG && window.EPT.CONFIG.CLIENT_ID) || "";
 
@@ -17,7 +18,15 @@ window.EPT = window.EPT || {};
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: clientId(),
       scope: "https://www.googleapis.com/auth/spreadsheets",
-      callback: () => {} // replaced per-request in getToken
+      callback: () => {}, // replaced per-request in getToken
+      error_callback: err => {
+        if (pendingReject) {
+          pendingReject(new Error(err && err.type === "popup_failed_to_open"
+            ? "Sign-in popup was blocked — tap the button again"
+            : "Google sign-in was cancelled"));
+          pendingReject = null;
+        }
+      }
     });
     return tokenClient;
   }
@@ -31,7 +40,9 @@ window.EPT = window.EPT || {};
         if (this.isConnected()) return resolve(accessToken);
         const tc = ensureClient();
         if (!tc) return reject(new Error("Google sync not configured (missing Client ID) or Google script not loaded"));
+        pendingReject = reject;
         tc.callback = resp => {
+          pendingReject = null;
           if (resp.error) return reject(new Error(resp.error));
           accessToken = resp.access_token;
           tokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
