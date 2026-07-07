@@ -4,7 +4,27 @@ window.EPT = window.EPT || {};
 
 (function () {
   let currentRange = "today";
+  let lastFiltered = [];   // sessions currently shown (cached so Share works synchronously)
   const el = id => document.getElementById(id);
+
+  function rangeLabel() {
+    const now = new Date();
+    const fmt = (d, o) => d.toLocaleDateString(undefined, o || { month: "short", day: "numeric", year: "numeric" });
+    switch (currentRange) {
+      case "today": return fmt(now, { weekday: "long", month: "short", day: "numeric", year: "numeric" });
+      case "week": {
+        const s = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        s.setDate(s.getDate() - s.getDay());
+        return "Week of " + fmt(s);
+      }
+      case "month": return now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+      case "custom": {
+        const sv = el("rangeStart").value, ev = el("rangeEnd").value;
+        return (sv || "…") + " to " + (ev || "…");
+      }
+      default: return "All time";
+    }
+  }
 
   function rangeBounds() {
     const now = new Date();
@@ -42,6 +62,7 @@ window.EPT = window.EPT || {};
           return d >= start && d < end;
         })
         .sort((a, b) => b.session_datetime.localeCompare(a.session_datetime));
+      lastFiltered = filtered;
 
       // Totals
       let wrvu = 0, revenue = 0;
@@ -78,7 +99,17 @@ window.EPT = window.EPT || {};
               <span><span class="code">${li.cpt_code}${li.modifiers.length ? "-" + li.modifiers.join("-") : ""}</span> ${li.code_label}</span>
               <span>${li.wrvu.toFixed(2)}</span>
             </div>`).join("")}
-          <button class="session-del">Delete session</button>`;
+          <div class="session-actions">
+            <button class="session-share">📤 Share</button>
+            <button class="session-del">Delete session</button>
+          </div>`;
+        card.querySelector(".session-share").addEventListener("click", ev => {
+          const mode = window.EPT.exportShare.shareText(window.EPT.exportShare.sessionText(s));
+          if (mode === "copied") {
+            ev.target.textContent = "✓ Copied";
+            setTimeout(() => (ev.target.textContent = "📤 Share"), 1500);
+          }
+        });
         card.querySelector(".session-del").addEventListener("click", () => {
           if (confirm("Delete this session? (local only)")) {
             window.EPT.db.deleteSession(s.session_id).then(refresh);
@@ -102,6 +133,14 @@ window.EPT = window.EPT || {};
       });
       el("rangeStart").addEventListener("change", refresh);
       el("rangeEnd").addEventListener("change", refresh);
+      el("shareRangeBtn").addEventListener("click", ev => {
+        if (!lastFiltered.length) { ev.target.textContent = "Nothing to share"; setTimeout(() => (ev.target.textContent = "📤 Share"), 1500); return; }
+        const mode = window.EPT.exportShare.shareText(window.EPT.exportShare.rangeText(lastFiltered, rangeLabel()));
+        if (mode === "copied") {
+          ev.target.textContent = "✓ Copied";
+          setTimeout(() => (ev.target.textContent = "📤 Share"), 1500);
+        }
+      });
       el("pullBtn").addEventListener("click", async () => {
         el("pullBtn").textContent = "⟳ Syncing…";
         try {

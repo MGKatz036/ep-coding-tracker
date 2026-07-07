@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="EP Coder">
   <title>EP Coding Tracker</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header>
@@ -57,6 +57,7 @@
         <button class="filter-btn" data-range="all">All</button>
         <button class="filter-btn" data-range="custom">Custom</button>
         <button id="pullBtn" class="filter-btn" title="Pull entries from Google Sheet (incl. other devices)">⟳ Sync down</button>
+        <button id="shareRangeBtn" class="filter-btn" title="Share/copy a text summary of the sessions shown below">📤 Share</button>
       </div>
       <div id="customRange" class="field-row hidden">
         <input type="date" id="rangeStart"> <span>to</span> <input type="date" id="rangeEnd">
@@ -100,16 +101,16 @@
   </main>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <script src="data/config.js?v=3"></script>
-  <script src="data/referenceData.js?v=3"></script>
-  <script src="js/db.js?v=3"></script>
-  <script src="js/googleAuth.js?v=3"></script>
-  <script src="js/sheetsClient.js?v=3"></script>
-  <script src="js/syncEngine.js?v=3"></script>
-  <script src="js/sessionForm.js?v=3"></script>
-  <script src="js/historyView.js?v=3"></script>
-  <script src="js/settingsView.js?v=3"></script>
-  <script src="js/exportShare.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="data/config.js?v=4"></script>
+  <script src="data/referenceData.js?v=4"></script>
+  <script src="js/db.js?v=4"></script>
+  <script src="js/googleAuth.js?v=4"></script>
+  <script src="js/sheetsClient.js?v=4"></script>
+  <script src="js/syncEngine.js?v=4"></script>
+  <script src="js/sessionForm.js?v=4"></script>
+  <script src="js/historyView.js?v=4"></script>
+  <script src="js/settingsView.js?v=4"></script>
+  <script src="js/exportShare.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
 </body>
 </html>
