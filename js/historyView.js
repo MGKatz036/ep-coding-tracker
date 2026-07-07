@@ -122,7 +122,8 @@ window.EPT = window.EPT || {};
 
   window.EPT.historyView = {
     init() {
-      document.querySelectorAll(".filter-btn").forEach(btn => {
+      // [data-range] only — Share and Sync-down share the .filter-btn style but are not filters
+      document.querySelectorAll(".filter-btn[data-range]").forEach(btn => {
         btn.addEventListener("click", () => {
           document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
