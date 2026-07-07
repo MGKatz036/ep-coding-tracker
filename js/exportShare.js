@@ -30,7 +30,7 @@ window.EPT = window.EPT || {};
   }
 
   function download() {
-    window.EPT.db.getAllSessions().then(sessions => {
+    window.EPT.db.getActiveSessions().then(sessions => {
       if (!sessions.length) { alert("No sessions to export yet."); return; }
       const blob = new Blob([buildCsv(sessions)], { type: "text/csv" });
       const a = document.createElement("a");

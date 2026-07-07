@@ -56,6 +56,32 @@ window.EPT = window.EPT || {};
     // Full read of the log (used by the Phase 3 cross-device merge).
     fetchAllRows() {
       return call("/values/SessionLog!A2:L100000").then(r => r.values || []);
+    },
+
+    // Numeric tab id of SessionLog (needed for row deletion), cached.
+    async getSessionLogGid() {
+      if (this._gid !== undefined) return this._gid;
+      const meta = await call("?fields=sheets.properties");
+      const tab = (meta.sheets || []).find(s => s.properties.title === "SessionLog");
+      this._gid = tab ? tab.properties.sheetId : null;
+      return this._gid;
+    },
+
+    // Remove every row belonging to the given session_ids from the Sheet.
+    // Row indices are deleted bottom-up so earlier deletions don't shift later ones.
+    async deleteRowsBySessionIds(sessionIds) {
+      const ids = new Set(sessionIds);
+      const rows = await this.fetchAllRows();
+      // data starts at sheet row 2 → array index i is 0-based grid index i+1
+      const gridIndices = [];
+      rows.forEach((r, i) => { if (ids.has(r[0])) gridIndices.push(i + 1); });
+      if (!gridIndices.length) return 0;
+      const gid = await this.getSessionLogGid();
+      const requests = gridIndices.sort((a, b) => b - a).map(idx => ({
+        deleteDimension: { range: { sheetId: gid, dimension: "ROWS", startIndex: idx, endIndex: idx + 1 } }
+      }));
+      await call(":batchUpdate", { method: "POST", body: JSON.stringify({ requests }) });
+      return gridIndices.length;
     }
   };
 })();

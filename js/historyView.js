@@ -54,7 +54,7 @@ window.EPT = window.EPT || {};
   }
 
   function refresh() {
-    window.EPT.db.getAllSessions().then(sessions => {
+    window.EPT.db.getActiveSessions().then(sessions => {
       const [start, end] = rangeBounds();
       const filtered = sessions
         .filter(s => {
@@ -111,8 +111,11 @@ window.EPT = window.EPT || {};
           }
         });
         card.querySelector(".session-del").addEventListener("click", () => {
-          if (confirm("Delete this session? (local only)")) {
-            window.EPT.db.deleteSession(s.session_id).then(refresh);
+          if (confirm("Delete this session? It will also be removed from your Google Sheet and other devices on the next sync.")) {
+            window.EPT.db.markDeleted(s.session_id).then(() => {
+              refresh();
+              window.EPT.sync && window.EPT.sync.syncPending(); // push the deletion now if online
+            });
           }
         });
         list.appendChild(card);

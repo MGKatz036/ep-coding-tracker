@@ -52,9 +52,35 @@ window.EPT = window.EPT || {};
     deleteSession(sessionId) {
       return tx("readwrite", store => store.delete(sessionId));
     },
+    // Sessions that should appear in History / exports (excludes delete-tombstones)
+    getActiveSessions() {
+      return window.EPT.db.getAllSessions()
+        .then(all => all.filter(s => s.syncStatus !== "deleted"));
+    },
     getPendingSessions() {
       return window.EPT.db.getAllSessions()
         .then(all => all.filter(s => s.syncStatus === "pending"));
+    },
+    getDeletedSessions() {
+      return window.EPT.db.getAllSessions()
+        .then(all => all.filter(s => s.syncStatus === "deleted"));
+    },
+    // Delete request: never-synced sessions vanish immediately; synced ones
+    // become tombstones so the sync engine can remove their Sheet rows
+    // (and other devices learn of the deletion) before they're purged.
+    markDeleted(sessionId) {
+      return openDb().then(db => new Promise((resolve, reject) => {
+        const store = db.transaction(STORE, "readwrite").objectStore(STORE);
+        const req = store.get(sessionId);
+        req.onsuccess = () => {
+          const s = req.result;
+          if (!s) return resolve();
+          if (s.syncStatus === "pending") store.delete(sessionId);
+          else { s.syncStatus = "deleted"; store.put(s); }
+          resolve();
+        };
+        req.onerror = () => reject(req.error);
+      }));
     },
     markSynced(sessionId) {
       return openDb().then(db => new Promise((resolve, reject) => {

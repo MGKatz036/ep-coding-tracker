@@ -23,8 +23,10 @@ window.EPT = window.EPT || {};
     const badge = document.getElementById("syncBadge");
     if (!configured()) { badge.classList.add("hidden"); return; }
     const pending = await window.EPT.db.getPendingSessions();
+    const deleted = await window.EPT.db.getDeletedSessions();
+    const n = pending.length + deleted.length;
     badge.classList.remove("hidden");
-    badge.textContent = pending.length ? pending.length + " pending sync" : "Synced ✓";
+    badge.textContent = n ? n + " pending sync" : "Synced ✓";
   }
 
   async function syncPending() {
@@ -39,6 +41,13 @@ window.EPT = window.EPT || {};
         const rows = pending.flatMap(rowsForSession).filter(r => !existing.has(r[2]));
         if (rows.length) await window.EPT.sheets.appendRows(rows);
         for (const s of pending) await window.EPT.db.markSynced(s.session_id);
+      }
+      // Push deletions: remove tombstoned sessions' rows from the Sheet,
+      // then purge the local tombstones.
+      const deleted = await window.EPT.db.getDeletedSessions();
+      if (deleted.length) {
+        await window.EPT.sheets.deleteRowsBySessionIds(deleted.map(s => s.session_id));
+        for (const s of deleted) await window.EPT.db.deleteSession(s.session_id);
       }
     } catch (e) {
       // stays pending; will retry on next save, reconnect, or manual connect
@@ -55,11 +64,23 @@ window.EPT = window.EPT || {};
   async function pullAndMerge() {
     if (!configured()) return 0;
     const rows = await window.EPT.sheets.fetchAllRows();
-    const local = new Set((await window.EPT.db.getAllSessions()).map(s => s.session_id));
+    const locals = await window.EPT.db.getAllSessions();
+    const local = new Set(locals.map(s => s.session_id));
+    const sheetIds = new Set(rows.map(r => r[0]).filter(Boolean));
+
+    // Propagate deletions made on other devices: a locally *synced* session
+    // that no longer exists in the Sheet was deleted elsewhere — remove it.
+    // (Pending sessions are untouched: they simply haven't uploaded yet.)
+    for (const s of locals) {
+      if (s.syncStatus === "synced" && !sheetIds.has(s.session_id)) {
+        await window.EPT.db.deleteSession(s.session_id);
+      }
+    }
+
     const bySession = new Map();
     for (const r of rows) {
       const [sid, sdt, liid, cat, plabel, cpt, mods, wrvu, rate, rev, device, created] = r;
-      if (!sid || local.has(sid)) continue;
+      if (!sid || local.has(sid)) continue; // includes tombstones — never resurrect a deleted session
       if (!bySession.has(sid)) {
         bySession.set(sid, {
           session_id: sid, session_datetime: sdt, created_at: created || sdt,
