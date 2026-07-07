@@ -26,7 +26,7 @@ The values in `data/referenceData.js` are estimates. Before relying on totals, a
 - ✅ UI extras: ×2 counters for 93655/93657, automatic bundling gray-outs (2023 rules), leadless PM section (Aveir crosswalk values, 0795T = 12.8 per user's comp plan)
 - ✅ Phase 5 (partial): CSV export (Settings tab). iOS Share Sheet still to do.
 - ✅ Phase 2: Google Sheets connection — CONFIRMED WORKING (user connected via Chrome on Mac, localhost:8642; entries appear in SessionLog tab)
-- ⬜ Phase 3: offline sync queue + cross-device merge
+- ✅ Phase 3: offline sync queue + cross-device merge ("⟳ Sync down" in History; dedupe by line_item_id; auto-pull on connect; IDs baked into data/config.js)
 - ⬜ Phase 4: reporting polish
 - ⬜ Phase 6: settings/reference maintenance UX
 - ⬜ Phase 7: deployment (GitHub Pages + Google Cloud setup, done together step-by-step)

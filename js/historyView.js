@@ -102,6 +102,19 @@ window.EPT = window.EPT || {};
       });
       el("rangeStart").addEventListener("change", refresh);
       el("rangeEnd").addEventListener("change", refresh);
+      el("pullBtn").addEventListener("click", async () => {
+        el("pullBtn").textContent = "⟳ Syncing…";
+        try {
+          await window.EPT.sync.syncPending();
+          const added = await window.EPT.sync.pullAndMerge();
+          el("pullBtn").textContent = added ? `✓ ${added} pulled` : "✓ Up to date";
+        } catch (e) {
+          el("pullBtn").textContent = "Sync failed";
+          console.warn(e);
+        }
+        refresh();
+        setTimeout(() => (el("pullBtn").textContent = "⟳ Sync down"), 2500);
+      });
       refresh();
     },
     refresh

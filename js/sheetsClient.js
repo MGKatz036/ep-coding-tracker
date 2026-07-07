@@ -5,7 +5,7 @@ window.EPT = window.EPT || {};
 
 (function () {
   const API = "https://sheets.googleapis.com/v4/spreadsheets/";
-  const sheetId = () => localStorage.getItem("gs_spreadsheet_id") || "";
+  const sheetId = () => localStorage.getItem("gs_spreadsheet_id") || (window.EPT.CONFIG && window.EPT.CONFIG.SPREADSHEET_ID) || "";
 
   async function call(path, opts = {}) {
     const token = await window.EPT.auth.getToken();

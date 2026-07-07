@@ -42,7 +42,8 @@ window.EPT = window.EPT || {};
           await window.EPT.auth.getToken();          // consent popup on first use
           await window.EPT.sheets.ensureSetup();      // creates SessionLog tab if needed
           await window.EPT.sync.syncPending();        // flush anything saved before connecting
-          status.textContent = "Connected ✓ — SessionLog tab is ready in your Sheet.";
+          const pulled = await window.EPT.sync.pullAndMerge(); // pull other-device history
+          status.textContent = "Connected ✓ — SessionLog ready" + (pulled ? `, ${pulled} session(s) pulled from Sheet.` : ".");
         } catch (err) {
           status.textContent = "Connection failed: " + err.message;
         }

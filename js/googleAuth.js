@@ -9,7 +9,7 @@ window.EPT = window.EPT || {};
   let accessToken = null;
   let tokenExpiry = 0;
 
-  const clientId = () => localStorage.getItem("gs_client_id") || "";
+  const clientId = () => localStorage.getItem("gs_client_id") || (window.EPT.CONFIG && window.EPT.CONFIG.CLIENT_ID) || "";
 
   function ensureClient() {
     if (tokenClient) return tokenClient;

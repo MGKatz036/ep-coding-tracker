@@ -56,6 +56,7 @@
         <button class="filter-btn" data-range="month">Month</button>
         <button class="filter-btn" data-range="all">All</button>
         <button class="filter-btn" data-range="custom">Custom</button>
+        <button id="pullBtn" class="filter-btn" title="Pull entries from Google Sheet (incl. other devices)">⟳ Sync down</button>
       </div>
       <div id="customRange" class="field-row hidden">
         <input type="date" id="rangeStart"> <span>to</span> <input type="date" id="rangeEnd">
@@ -99,6 +100,7 @@
   </main>
 
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="data/config.js"></script>
   <script src="data/referenceData.js"></script>
   <script src="js/db.js"></script>
   <script src="js/googleAuth.js"></script>

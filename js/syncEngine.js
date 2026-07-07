@@ -33,8 +33,11 @@ window.EPT = window.EPT || {};
     try {
       const pending = await window.EPT.db.getPendingSessions();
       if (pending.length) {
-        const rows = pending.flatMap(rowsForSession);
-        await window.EPT.sheets.appendRows(rows);
+        // Dedupe guard: never re-append line items the Sheet already has
+        // (protects against a lost success response double-logging revenue).
+        const existing = new Set((await window.EPT.sheets.fetchAllRows()).map(r => r[2]));
+        const rows = pending.flatMap(rowsForSession).filter(r => !existing.has(r[2]));
+        if (rows.length) await window.EPT.sheets.appendRows(rows);
         for (const s of pending) await window.EPT.db.markSynced(s.session_id);
       }
     } catch (e) {
@@ -46,6 +49,37 @@ window.EPT = window.EPT || {};
     }
   }
 
-  window.EPT.sync = { syncPending, updateBadge };
+  // Cross-device merge: pull every row from the Sheet and locally store any
+  // session this device hasn't seen (keyed by session_id — entries made on
+  // other devices, or before this device was set up).
+  async function pullAndMerge() {
+    if (!configured()) return 0;
+    const rows = await window.EPT.sheets.fetchAllRows();
+    const local = new Set((await window.EPT.db.getAllSessions()).map(s => s.session_id));
+    const bySession = new Map();
+    for (const r of rows) {
+      const [sid, sdt, liid, cat, plabel, cpt, mods, wrvu, rate, rev, device, created] = r;
+      if (!sid || local.has(sid)) continue;
+      if (!bySession.has(sid)) {
+        bySession.set(sid, {
+          session_id: sid, session_datetime: sdt, created_at: created || sdt,
+          entry_device: device || "", syncStatus: "synced", lineItems: []
+        });
+      }
+      bySession.get(sid).lineItems.push({
+        line_item_id: liid, category: cat || "", procedure_label: plabel || "",
+        cpt_code: String(cpt || ""), code_label: plabel || "",
+        modifiers: mods ? String(mods).split(/\s+/).filter(Boolean) : [],
+        wrvu: parseFloat(wrvu) || 0,
+        wrvu_rate_snapshot: parseFloat(rate) || 0,
+        revenue_snapshot: parseFloat(rev) || 0
+      });
+    }
+    for (const s of bySession.values()) await window.EPT.db.addSession(s);
+    updateBadge();
+    return bySession.size;
+  }
+
+  window.EPT.sync = { syncPending, pullAndMerge, updateBadge };
   window.addEventListener("online", () => syncPending());
 })();
