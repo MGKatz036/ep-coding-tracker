@@ -11,6 +11,28 @@ window.EPT = window.EPT || {};
   let pendingReject = null; // lets a blocked/closed popup fail fast instead of hanging
 
   const clientId = () => localStorage.getItem("gs_client_id") || (window.EPT.CONFIG && window.EPT.CONFIG.CLIENT_ID) || "";
+  const SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+
+  // iOS home-screen ("standalone") apps can't open the GIS popup — use a
+  // full-page redirect to Google and capture the token when we land back.
+  const isStandalone = () => window.navigator.standalone === true;
+
+  function redirectAuth() {
+    const redirectUri = location.origin + location.pathname;
+    location.assign("https://accounts.google.com/o/oauth2/v2/auth" +
+      "?client_id=" + encodeURIComponent(clientId()) +
+      "&redirect_uri=" + encodeURIComponent(redirectUri) +
+      "&response_type=token" +
+      "&scope=" + encodeURIComponent(SCOPE));
+  }
+
+  // Runs at load: if Google just redirected back, the token is in the URL fragment.
+  if (location.hash.includes("access_token=")) {
+    const p = new URLSearchParams(location.hash.slice(1));
+    accessToken = p.get("access_token");
+    tokenExpiry = Date.now() + parseInt(p.get("expires_in") || "3600", 10) * 1000;
+    history.replaceState(null, "", location.pathname + location.search);
+  }
 
   function ensureClient() {
     if (tokenClient) return tokenClient;
@@ -38,6 +60,7 @@ window.EPT = window.EPT || {};
     getToken() {
       return new Promise((resolve, reject) => {
         if (this.isConnected()) return resolve(accessToken);
+        if (isStandalone() && clientId()) return redirectAuth(); // page navigates to Google & back
         const tc = ensureClient();
         if (!tc) return reject(new Error("Google sync not configured (missing Client ID) or Google script not loaded"));
         pendingReject = reject;
