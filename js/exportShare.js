@@ -90,6 +90,68 @@ window.EPT = window.EPT || {};
       " · " + wrvu.toFixed(2) + " wRVU · " + fmtMoney(rev);
   }
 
+  // Shared table shape: one row per session, Date | CPT 1–6 | wRVU | Revenue.
+  // Sessions with >6 codes overflow into the 6th column (comma-separated) so
+  // the table never breaks; wRVU/revenue columns always reflect ALL codes.
+  function tableData(sessions) {
+    const sorted = sessions.slice().sort((a, b) => a.session_datetime.localeCompare(b.session_datetime));
+    let totWrvu = 0, totRev = 0;
+    const rows = sorted.map(s => {
+      const codes = s.lineItems.map(li => li.cpt_code + (li.modifiers.length ? "-" + li.modifiers.join("-") : ""));
+      const cols = codes.length <= 6
+        ? codes.concat(Array(6 - codes.length).fill(""))
+        : codes.slice(0, 5).concat([codes.slice(5).join(", ")]);
+      const wrvu = s.lineItems.reduce((t, li) => t + li.wrvu, 0);
+      const rev = s.lineItems.reduce((t, li) => t + li.revenue_snapshot, 0);
+      totWrvu += wrvu; totRev += rev;
+      return { date: s.session_datetime.slice(0, 10), cols, wrvu, rev };
+    });
+    return { rows, totWrvu, totRev };
+  }
+
+  function mdTable(sessions, label) {
+    const { rows, totWrvu, totRev } = tableData(sessions);
+    return [
+      "**EP Procedures — " + label + "**",
+      "",
+      "| Date | CPT 1 | CPT 2 | CPT 3 | CPT 4 | CPT 5 | CPT 6 | wRVU | Revenue |",
+      "|------|-------|-------|-------|-------|-------|-------|------|---------|",
+      ...rows.map(r => "| " + r.date + " | " + r.cols.join(" | ") + " | " + r.wrvu.toFixed(2) + " | " + fmtMoney(r.rev) + " |"),
+      "| **Total** |  |  |  |  |  |  | **" + totWrvu.toFixed(2) + "** | **" + fmtMoney(totRev) + "** |"
+    ].join("\n");
+  }
+
+  // HTML version of the same table — Apple Notes (and Mail, Word, etc.)
+  // converts this into a real native table on paste.
+  function htmlTable(sessions, label) {
+    const { rows, totWrvu, totRev } = tableData(sessions);
+    const td = v => "<td>" + (v || "") + "</td>";
+    const header = "<tr>" + ["Date", "CPT 1", "CPT 2", "CPT 3", "CPT 4", "CPT 5", "CPT 6", "wRVU", "Revenue"]
+      .map(h => "<th>" + h + "</th>").join("") + "</tr>";
+    const body = rows.map(r =>
+      "<tr>" + td(r.date) + r.cols.map(td).join("") + td(r.wrvu.toFixed(2)) + td(fmtMoney(r.rev)) + "</tr>"
+    ).join("");
+    const totals = "<tr><td><b>Total</b></td>" + "<td></td>".repeat(6) +
+      "<td><b>" + totWrvu.toFixed(2) + "</b></td><td><b>" + fmtMoney(totRev) + "</b></td></tr>";
+    return "<p><b>EP Procedures — " + label + "</b></p>" +
+      "<table border='1' style='border-collapse:collapse'>" + header + body + totals + "</table>";
+  }
+
+  // Copies BOTH formats at once: rich apps (Notes, Mail) paste a real table,
+  // plain-text fields get the markdown. Must be called from a click handler.
+  function copyRich(html, plain) {
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        navigator.clipboard.write([new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([plain], { type: "text/plain" })
+        })]).catch(() => navigator.clipboard.writeText(plain));
+        return;
+      } catch (e) {}
+    }
+    try { navigator.clipboard.writeText(plain); } catch (e) {}
+  }
+
   // iOS/Safari: opens the system Share Sheet (Notes, Messages, Mail…).
   // Elsewhere: copies to clipboard. Returns which path was used.
   // Must be called directly from a click handler (no awaits before it).
@@ -106,6 +168,6 @@ window.EPT = window.EPT || {};
     init() {
       document.getElementById("exportCsvBtn").addEventListener("click", download);
     },
-    sessionText, rangeText, shareText
+    sessionText, rangeText, mdTable, htmlTable, copyRich, shareText
   };
 })();

@@ -52,8 +52,9 @@ window.EPT = window.EPT || {};
           });
           stepper.querySelector(".minus").addEventListener("click", () => removeOneUnit(proc));
           row.appendChild(stepper);
+          const unitHint = proc.separateSessions ? " · each saves as its own entry" : ` · up to ×${max}`;
           row.insertAdjacentHTML("beforeend",
-            `<span class="proc-label">${proc.label}<br><span class="proc-codes">${codes} · up to ×${max}</span><span class="bundle-note"></span></span>`);
+            `<span class="proc-label">${proc.label}<br><span class="proc-codes">${codes}${unitHint}</span><span class="bundle-note"></span></span>`);
           body.appendChild(row);
           return;
         }
@@ -270,25 +271,41 @@ window.EPT = window.EPT || {};
     if (cart.length === 0) return;
     const rate = getRate();
     const dateVal = el("sessionDate").value || todayStr();
-    const session = {
+    const timeStr = new Date().toTimeString().slice(0, 8);
+
+    const toLineItem = i => ({
+      line_item_id: i.line_item_id,
+      category: i.category,
+      procedure_label: i.procedure_label,
+      cpt_code: i.cpt,
+      code_label: i.code_label,
+      modifiers: i.modifiers.slice(),
+      wrvu: i.wrvu,
+      wrvu_rate_snapshot: rate,
+      revenue_snapshot: +(i.wrvu * rate).toFixed(2)
+    });
+
+    const mkSession = items => ({
       session_id: window.EPT.uuid(),
-      session_datetime: dateVal + "T" + new Date().toTimeString().slice(0, 8),
+      session_datetime: dateVal + "T" + timeStr,
       created_at: new Date().toISOString(),
       entry_device: /iPhone|iPad/.test(navigator.userAgent) ? "iPhone" : "Mac",
       syncStatus: "pending",
-      lineItems: cart.map(i => ({
-        line_item_id: i.line_item_id,
-        category: i.category,
-        procedure_label: i.procedure_label,
-        cpt_code: i.cpt,
-        code_label: i.code_label,
-        modifiers: i.modifiers.slice(),
-        wrvu: i.wrvu,
-        wrvu_rate_snapshot: rate,
-        revenue_snapshot: +(i.wrvu * rate).toFixed(2)
-      }))
-    };
-    window.EPT.db.addSession(session).then(() => {
+      lineItems: items.map(toLineItem)
+    });
+
+    // E/M-style procedures (separateSessions) log each unit as its OWN entry
+    // (one per patient encounter); everything else stays one combined session.
+    const splitItems = [], regularItems = [];
+    cart.forEach(i => {
+      const proc = findProc(i.procId);
+      (proc && proc.separateSessions ? splitItems : regularItems).push(i);
+    });
+    const sessions = [];
+    if (regularItems.length) sessions.push(mkSession(regularItems));
+    splitItems.forEach(i => sessions.push(mkSession([i])));
+
+    Promise.all(sessions.map(s => window.EPT.db.addSession(s))).then(() => {
       clearCart();
       window.EPT.flashSaved && window.EPT.flashSaved();
       window.EPT.historyView && window.EPT.historyView.refresh();

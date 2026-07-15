@@ -145,6 +145,16 @@ window.EPT = window.EPT || {};
           setTimeout(() => (ev.target.textContent = "📤 Share"), 1500);
         }
       });
+      el("mdBtn").addEventListener("click", ev => {
+        if (!lastFiltered.length) { ev.target.textContent = "Nothing to copy"; setTimeout(() => (ev.target.textContent = "📋 Table"), 1500); return; }
+        // rich HTML (pastes as a real table in Notes/Mail) + markdown as the plain-text fallback
+        window.EPT.exportShare.copyRich(
+          window.EPT.exportShare.htmlTable(lastFiltered, rangeLabel()),
+          window.EPT.exportShare.mdTable(lastFiltered, rangeLabel())
+        );
+        ev.target.textContent = "✓ Copied — paste into Notes";
+        setTimeout(() => (ev.target.textContent = "📋 Table"), 2000);
+      });
       el("pullBtn").addEventListener("click", async () => {
         el("pullBtn").textContent = "⟳ Syncing…";
         try {

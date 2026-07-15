@@ -160,6 +160,19 @@ window.EPT.REFERENCE_DATA = [
     ]
   },
   {
+    category: "Lead & Device Extraction",
+    // For a full system explant, combine generator removal + the lead
+    // extraction code (ICD generator removal 33241 lives in the
+    // Defibrillator Generator Changes category).
+    procedures: [
+      { id: "pm_gen_removal", label: "PM generator removal only", codes: [{ cpt: "33233", label: "Removal of permanent PM pulse generator", wrvu: 3.06, modifiers: [] }] },
+      { id: "extract_pm_single", label: "PM lead extraction — single lead system", codes: [{ cpt: "33234", label: "Removal of transvenous PM electrode(s), single lead system", wrvu: 7.47, modifiers: [] }] },
+      { id: "extract_pm_dual", label: "PM lead extraction — dual lead system", codes: [{ cpt: "33235", label: "Removal of transvenous PM electrode(s), dual lead system", wrvu: 9.65, modifiers: [] }] },
+      { id: "extract_icd", label: "ICD lead extraction — transvenous", codes: [{ cpt: "33244", label: "Removal of ICD electrode(s), transvenous", wrvu: 13.4, modifiers: [] }] },
+      { id: "extract_thoracotomy", label: "Lead extraction by thoracotomy", codes: [{ cpt: "33243", label: "Removal of ICD electrode(s) by thoracotomy", wrvu: 22.98, modifiers: [] }] }
+    ]
+  },
+  {
     category: "Loop Recorders & Other Procedures",
     procedures: [
       { id: "ilr_implant", label: "Implantable loop recorder — insert", codes: [{ cpt: "33285", label: "ILR insertion", wrvu: 1.49, modifiers: [] }] },
@@ -192,6 +205,35 @@ window.EPT.REFERENCE_DATA = [
     ]
   }
 ];
+
+// Inpatient E/M and critical care. separateSessions: each unit logged on the
+// counter becomes its OWN entry in the log (one per patient encounter), per
+// the user's preference — e.g. 5 follow-ups = 5 separate dated entries.
+window.EPT.REFERENCE_DATA.push({
+  category: "Inpatient E/M & Critical Care",
+  procedures: [
+    { id: "em_init_low", label: "Initial hospital visit — straightforward/low (99221)", separateSessions: true, maxUnits: 10,
+      codes: [{ cpt: "99221", label: "Initial hospital inpatient/obs care, low complexity", wrvu: 1.63, modifiers: [] }] },
+    { id: "em_init_mod", label: "Initial hospital visit — moderate (99222)", separateSessions: true, maxUnits: 10,
+      codes: [{ cpt: "99222", label: "Initial hospital inpatient/obs care, moderate complexity", wrvu: 2.6, modifiers: [] }] },
+    { id: "em_init_high", label: "Initial hospital visit — high (99223)", separateSessions: true, maxUnits: 10,
+      codes: [{ cpt: "99223", label: "Initial hospital inpatient/obs care, high complexity", wrvu: 3.5, modifiers: [] }] },
+    { id: "em_subs_low", label: "Follow-up hospital visit — straightforward/low (99231)", separateSessions: true, maxUnits: 15,
+      codes: [{ cpt: "99231", label: "Subsequent hospital inpatient/obs care, low complexity", wrvu: 1.0, modifiers: [] }] },
+    { id: "em_subs_mod", label: "Follow-up hospital visit — moderate (99232)", separateSessions: true, maxUnits: 15,
+      codes: [{ cpt: "99232", label: "Subsequent hospital inpatient/obs care, moderate complexity", wrvu: 1.59, modifiers: [] }] },
+    { id: "em_subs_high", label: "Follow-up hospital visit — high (99233)", separateSessions: true, maxUnits: 15,
+      codes: [{ cpt: "99233", label: "Subsequent hospital inpatient/obs care, high complexity", wrvu: 2.4, modifiers: [] }] },
+    { id: "em_dc_short", label: "Discharge day management — ≤30 min (99238)", separateSessions: true, maxUnits: 10,
+      codes: [{ cpt: "99238", label: "Hospital discharge day management, 30 min or less", wrvu: 1.5, modifiers: [] }] },
+    { id: "em_dc_long", label: "Discharge day management — >30 min (99239)", separateSessions: true, maxUnits: 10,
+      codes: [{ cpt: "99239", label: "Hospital discharge day management, more than 30 min", wrvu: 2.15, modifiers: [] }] },
+    { id: "critcare", label: "Critical care — first 30–74 min (99291)",
+      codes: [{ cpt: "99291", label: "Critical care, first 30–74 minutes", wrvu: 4.5, modifiers: [] }] },
+    { id: "critcare_addl", label: "Critical care — each add'l 30 min (+99292)", maxUnits: 4, requires: ["critcare"],
+      codes: [{ cpt: "99292", label: "Critical care, each additional 30 minutes", wrvu: 2.25, modifiers: [] }] }
+  ]
+});
 
 // Modifier legend shown in the UI when suggesting modifiers.
 window.EPT.MODIFIER_LEGEND = {
